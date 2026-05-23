@@ -10,6 +10,7 @@ import (
 
 type implantID struct {
 	Hostname string
+	LastSeen time.Time
 	Active   bool
 }
 
@@ -63,6 +64,7 @@ func handleImplants(conn net.Conn) {
 	hostname := GetHostname(reader)
 	implant = implantID{
 		Hostname: hostname,
+		LastSeen: time.Now(),
 		Active:   true,
 	}
 

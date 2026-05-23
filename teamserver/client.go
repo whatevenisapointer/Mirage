@@ -18,7 +18,7 @@ func listImplants() {
 		status = "active"
 	}
 
-	fmt.Printf("[+] ID:%s Status:%s\n", implant.Hostname, status)
+	fmt.Printf("[+] ID:%s Status:%s Last Seen:%s\n", implant.Hostname, status, implant.LastSeen.Format("15:04:05"))
 }
 func getUserInput() {
 	input := bufio.NewReader(os.Stdin)
