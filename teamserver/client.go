@@ -13,6 +13,11 @@ var pendingCommand string
 var outputDone = make(chan bool)
 var selectedImplant string
 
+func helpMenu() {
+	fmt.Println("/implants,	Description:Will show all connected implants")
+	fmt.Println("use <implant-name>, Description:Connect to a specified implant")
+}
+
 func listImplants() {
 	for _, implant := range implants {
 		status := "inactive"
@@ -36,7 +41,13 @@ func getUserInput() {
 		}
 
 		command = strings.TrimSpace(command)
-		if command == "implants" { // should change to show prefix
+		if command == "help" {
+			helpMenu()
+			continue
+		}
+
+		command = strings.TrimSpace(command)
+		if command == "/implants" {
 			listImplants()
 			continue
 		}
