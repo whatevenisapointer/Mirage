@@ -23,7 +23,7 @@ func getUserInput() {
 		}
 
 		pendingCommand = strings.TrimSpace(command)
-		<-outputDone
+		<-outputDone // Receving a value from channel i believe
 	}
 }
 
@@ -35,7 +35,7 @@ func sendCommands(conn net.Conn) {
 		return
 	}
 
-	fmt.Println("[+] Command sent successfully")
+	fmt.Println("\n[+] Command sent successfully")
 }
 
 func receiveOutput(conn net.Conn) {
@@ -45,12 +45,10 @@ func receiveOutput(conn net.Conn) {
 		if err != nil {
 			return
 		}
-
 		if strings.TrimSpace(output) == "END_OF_OUTPUT" || strings.TrimSpace(output) == "NO_COMMAND" {
 			outputDone <- true
 			return
 		}
 		fmt.Print(output)
 	}
-
 }
